@@ -14,6 +14,3 @@ This project analyzes and predicts wait times for Disney World attractions using
 
 ## 🧠 Model
 Trained on wait time and calendar metadata using scikit-learn.
-
-## 👩‍💻 Author
-🌟 ([@gulnisunay](https://github.com/gulnisunay))
