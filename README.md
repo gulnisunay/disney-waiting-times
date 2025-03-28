@@ -45,44 +45,20 @@ Visualize average wait times by weekday and holiday using:
 
 ---
 
-### 🧠 Intelligent Itinerary Generator (Experimental)
-
-- Interpolates data for each day in 30-minute intervals  
-- Users choose a date and arrival time  
-- Generates a ride plan using a **greedy algorithm** (shortest wait times first)  
-- Customizable:
-  - Number of rides  
-  - Ride and walk durations  
-
----
 
 ## 🚀 Getting Started
 
 **1. Clone the Repository:**
 
-git clone https://github.com/gulnisunay/disney-waiting-times.git
-cd disney-waiting-times
+- git clone https://github.com/gulnisunay/disney-waiting-times.git
+
+- cd disney-waiting-times
 
 ## 2. Set Up the Environment
 
-conda env create -f environment.yml
-conda activate disney_env_v2
+- conda env create -f environment.yml
+- conda activate disney_env_v2
 
 ## 3. Run the App
 
 streamlit run Disney_streamlit_app.py
-
----
-
-### 🧪 Optional: Model Training
-
-To train your own wait time prediction model:
-python train_predict_model.py
-
-This will generate:
-
-wait_time_model.pkl
-
-model_features.pkl
-
-These can be used in the app for machine learning-based predictions.
