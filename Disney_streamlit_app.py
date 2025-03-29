@@ -513,6 +513,7 @@ def main():
     worst_hour_idx = wait_times.index(max(wait_times))
     worst_hour = hours[worst_hour_idx]
 
+
     # Display tips
     st.markdown(f"""
     Based on our predictions for {selected_attraction} on {selected_date.strftime("%A, %B %d, %Y")}:
@@ -530,6 +531,97 @@ def main():
     # Add footer
     st.markdown("---")
     st.markdown("© 2025 Disney Wait Time Predictor")
+
+
+    # --- FastPass Optimizer ---
+def assign_fastpass_manual(date, selected_rides):
+    """
+    Assign fixed FastPass times to selected attractions.
+    """
+    fastpass_times = ["10:00", "13:00", "16:00"]
+    assignments = {}
+
+    for i, attraction in enumerate(selected_rides):
+        if i >= len(fastpass_times):
+            break  # Limit to 3 slots
+        assignments[attraction] = fastpass_times[i]
+
+    return assignments
+
+# --- FastPass UI Integration ---
+st.sidebar.header("🎟️ FastPass Optimization")
+use_fastpass = st.sidebar.checkbox("Use FastPass Optimization")
+
+if use_fastpass:
+    # Tarih seçimi
+    selected_fp_year = st.sidebar.selectbox("📅 FP Year", list(range(datetime.now().year, datetime.now().year + 2)))
+    selected_fp_month = st.sidebar.selectbox("📅 FP Month", range(1, 13), format_func=lambda x: calendar.month_name[x])
+    _, fp_days_in_month = calendar.monthrange(selected_fp_year, selected_fp_month)
+    selected_fp_day = st.sidebar.slider("📅 FP Day", 1, fp_days_in_month)
+    selected_fp_date = datetime(selected_fp_year, selected_fp_month, selected_fp_day)
+
+    # Atraksiyon seçimi (çoklu seçim)
+    st.sidebar.markdown("🎢 Select up to 3 attractions for FastPass:")
+    selected_fp_rides = st.sidebar.multiselect("Choose Attractions", options=attractions, max_selections=3)
+
+    # Gösterim
+    st.subheader(f"🎟️ Your FastPass Plan for {selected_fp_date.strftime('%A, %B %d, %Y')}")
+    if selected_fp_rides:
+        plan = assign_fastpass_manual(selected_fp_date, selected_fp_rides)
+        st.table(pd.DataFrame(list(plan.items()), columns=["Attraction", "FastPass Time Slot"]))
+    else:
+        st.info("Please select up to 3 attractions to generate your FastPass plan.")
+
+
+# --- FastPass Benefit Comparison ---
+def compare_fastpass_benefit(selected_date, selected_rides, fastpass_times=["10:00", "13:00", "16:00"], fastpass_wait_time=5):
+    normal_total = 0
+    fastpass_total = 0
+
+    comparison_data = []
+
+    for ride, time_str in zip(selected_rides, fastpass_times):
+        hour = int(time_str.split(":")[0])
+        normal_wait = predict_wait_time(selected_date, ride, hour)
+        fastpass_wait = fastpass_wait_time
+
+        normal_total += normal_wait
+        fastpass_total += fastpass_wait
+
+        comparison_data.append({
+            "Attraction": ride,
+            "Time": time_str,
+            "Normal Wait (min)": round(normal_wait, 1),
+            "FastPass Wait (min)": fastpass_wait,
+            "Time Saved (min)": round(normal_wait - fastpass_wait, 1)
+        })
+
+    return normal_total, fastpass_total, pd.DataFrame(comparison_data)
+
+
+# --- UI for Comparison ---
+st.subheader("⏱️ FastPass vs Normal Visit Comparison")
+
+if use_fastpass and selected_fp_rides:
+    total_normal, total_fastpass, compare_df = compare_fastpass_benefit(selected_fp_date, selected_fp_rides)
+
+    st.write(f"### For {selected_fp_date.strftime('%A, %B %d, %Y')}")
+
+    st.dataframe(compare_df)
+
+    st.markdown(f"""
+    - 🕒 **Total Normal Wait Time**: `{total_normal:.1f}` minutes  
+    - 🎟️ **Total With FastPass**: `{total_fastpass}` minutes  
+    - 💡 **Time Saved**: `{total_normal - total_fastpass:.1f}` minutes
+    """)
+
+    # Visualization
+    fig, ax = plt.subplots(figsize=(6, 4))
+    bars = ax.bar(["Normal", "FastPass"], [total_normal, total_fastpass], color=["orangered", "seagreen"])
+    ax.set_ylabel("Total Wait Time (minutes)")
+    ax.set_title("⏱️ Total Wait Time Comparison")
+    ax.bar_label(bars, padding=3)
+    st.pyplot(fig)
 
 
 if __name__ == "__main__":
