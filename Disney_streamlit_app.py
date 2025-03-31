@@ -24,6 +24,9 @@ def load_data():
     df = pd.read_csv("C:/Disney_Waiting_Times/disney-waiting-times/all_waiting_times_extracted/all_waiting_times.csv")
     entities = pd.read_csv("C:/Disney_Waiting_Times/disney-waiting-times/data/overview data/entities_extra.csv")
     metadata = pd.read_csv("C:/Disney_Waiting_Times/disney-waiting-times/data/overview data/metadata.csv")
+    # df = pd.read_csv("C:/Users/mateo/Documents/SYNTRA/2TIM/disney_csv/all_waiting_times.csv")
+    # entities = pd.read_csv("C:/Users/mateo/Documents/SYNTRA/2TIM/disney_csv/entities_extra.csv")
+    # metadata = pd.read_csv("C:/Users/mateo/Documents/SYNTRA/2TIM/disney_csv/metadata.csv")
     return df, entities, metadata
 
 df, entities_extra, metadata = load_data()
@@ -627,3 +630,102 @@ if use_fastpass and selected_fp_rides:
 if __name__ == "__main__":
     main()
 
+# ====================================================================
+# write everything in english
+# Function to create itinerary2
+def make_itinerary2(interesting, day_string, hourref):
+    day = datetime.strptime(day_string, '%Y-%m-%d').date()
+    hourref2 = pd.to_datetime(hourref)
+
+    # Filter the data based on conditions
+    cond1 = df_rides['date'] == day
+    cond2 = df_rides['datetime'] > hourref2
+    cond3 = df_rides['attraction'].isin(interesting)
+
+    df_filtered2 = df_rides[cond1 & cond2 & cond3]
+
+    # Group by attraction and calculate the average wait time
+    df5 = df_filtered2.groupby('attraction')['SPOSTMIN'].agg('mean')
+    df7 = df5.sort_values(ascending=True)
+
+    # Sort the attractions by the average wait time
+    interesting_sorted = df7.index.tolist()
+
+    itinerary2 = []  # To store the final itinerary
+    used_attractions = set()  # To keep track of which attractions have been added to the itinerary
+
+    # Create hourlist based on the user's arrival time, ensuring it finishes at 23:59
+    start_hour = hourref2.hour
+    end_hour = 23  # End of the day (23:59)
+
+    hourlist = [str(start_hour + i) for i in range(0, end_hour - start_hour + 1)]
+
+    # Iterate through each hour and select the attraction with the lowest wait time
+    for hour in hourlist:
+        for att in interesting_sorted:
+            if att not in used_attractions:
+                # Filter for the selected attraction and hour
+                df_temp = df_filtered2[
+                    (df_filtered2['attraction'] == att) & (df_filtered2['datetime'].dt.hour == int(hour))]
+
+                # If entries exist for the hour
+                if not df_temp.empty:
+                    # Calculate the average wait time for this hour
+                    mean_wait_time = df_temp['SPOSTMIN'].mean().round()
+
+                    # Add the attraction to the itinerary if its wait time is lower than the global average
+                    if mean_wait_time < df_filtered2['SPOSTMIN'].mean():
+                        itinerary2.append((att, hour, mean_wait_time))
+                        used_attractions.add(att)
+                        break  # Stop checking other attractions for this hour
+
+    # After processing the optimal attractions, add remaining ones
+    for att in interesting_sorted:
+        if att not in used_attractions:
+            df_temp = df_filtered2[df_filtered2['attraction'] == att]
+            if not df_temp.empty:
+                mean_wait_time = df_temp['SPOSTMIN'].mean().round()
+                itinerary2.append((att, "Remaining", mean_wait_time))
+
+    return itinerary2
+
+
+# Streamlit App Interface
+st.title("Itinerary Generator for 1 day in the past, maximum 5 favourite attractions")
+
+# Date picker for arrival date
+day_picker = st.date_input("Pick a Date", datetime(2021, 1, 14))
+
+# Time picker for arrival time (only selecting hour, no minutes)
+time_picker = st.selectbox("Pick Arrival Hour", options=[f"{i}:00" for i in range(9, 24)])
+
+# Multi-select for interesting attractions
+attraction_picker = st.multiselect(
+    "Select Interesting Attractions", options=ride_names, default=['haunted_mansion', 'dumbo']
+)
+
+# Button to generate itinerary
+if st.button("Generate Itinerary"):
+    day_string = day_picker.strftime('%Y-%m-%d')
+    # Correct the formatting of the hourref
+    hourref = f"{day_string} {time_picker}"  # No need for additional ":00:00" here
+
+    interesting = list(attraction_picker)
+
+    itinerary2 = make_itinerary2(interesting, day_string, hourref)
+
+    # Convert itinerary to DataFrame and display it
+    itinerary_df = pd.DataFrame(itinerary2, columns=["Attraction", "Hour", "Wait Time (minutes)"])
+
+    # Display the itinerary DataFrame
+    st.write(itinerary_df)
+
+    # Check for missing attractions (those that are in 'interesting' but not in 'itinerary_df')
+    included_attractions = set(itinerary_df['Attraction'].unique())
+    missing_attractions = [att for att in interesting if att not in included_attractions]
+
+    # Show message for missing attractions
+    if missing_attractions:
+        st.write(f"For following attractions we did not find any posted waiting times for the selected day: {', '.join(missing_attractions)}.")
+
+# ===========================================================
