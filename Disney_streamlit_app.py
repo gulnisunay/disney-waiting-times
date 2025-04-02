@@ -24,9 +24,6 @@ def load_data():
     df = pd.read_csv("C:/Disney_Waiting_Times/disney-waiting-times/all_waiting_times_extracted/all_waiting_times.csv")
     entities = pd.read_csv("C:/Disney_Waiting_Times/disney-waiting-times/data/overview data/entities_extra.csv")
     metadata = pd.read_csv("C:/Disney_Waiting_Times/disney-waiting-times/data/overview data/metadata.csv")
-    # df = pd.read_csv("C:/Users/mateo/Documents/SYNTRA/2TIM/disney_csv/all_waiting_times.csv")
-    # entities = pd.read_csv("C:/Users/mateo/Documents/SYNTRA/2TIM/disney_csv/entities_extra.csv")
-    # metadata = pd.read_csv("C:/Users/mateo/Documents/SYNTRA/2TIM/disney_csv/metadata.csv")
     return df, entities, metadata
 
 df, entities_extra, metadata = load_data()
@@ -631,7 +628,7 @@ if __name__ == "__main__":
     main()
 
 # ====================================================================
-# write everything in english
+
 # Function to create itinerary2
 def make_itinerary2(interesting, day_string, hourref):
     day = datetime.strptime(day_string, '%Y-%m-%d').date()
@@ -694,10 +691,13 @@ def make_itinerary2(interesting, day_string, hourref):
 st.title("Itinerary Generator for 1 day in the past, maximum 5 favourite attractions")
 
 # Date picker for arrival date
-day_picker = st.date_input("Pick a Date", datetime(2021, 1, 14))
+day_picker = st.date_input("Pick a Date",
+    value=df_rides['date'].min(),  # Default value
+    min_value=df_rides['date'].min(),  # Min possible date
+    max_value=df_rides['date'].max() )
 
 # Time picker for arrival time (only selecting hour, no minutes)
-time_picker = st.selectbox("Pick Arrival Hour", options=[f"{i}:00" for i in range(9, 24)])
+time_picker = st.selectbox("Pick Arrival Hour", options=[f"{i}:00" for i in range(8, 24)])
 
 # Multi-select for interesting attractions
 attraction_picker = st.multiselect(
@@ -708,7 +708,7 @@ attraction_picker = st.multiselect(
 if st.button("Generate Itinerary"):
     day_string = day_picker.strftime('%Y-%m-%d')
     # Correct the formatting of the hourref
-    hourref = f"{day_string} {time_picker}"  # No need for additional ":00:00" here
+    hourref = f"{day_string} {time_picker}"  # No additional ":00:00"
 
     interesting = list(attraction_picker)
 
@@ -726,6 +726,6 @@ if st.button("Generate Itinerary"):
 
     # Show message for missing attractions
     if missing_attractions:
-        st.write(f"For following attractions we did not find any posted waiting times for the selected day: {', '.join(missing_attractions)}.")
+        st.write(f"Following attractions have no data for the selected day: {', '.join(missing_attractions)}.")
 
 # ===========================================================
