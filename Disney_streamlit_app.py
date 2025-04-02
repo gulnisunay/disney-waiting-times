@@ -21,9 +21,13 @@ st.markdown("Analyze average posted wait times for ride attractions based on wee
 # --- Load Data ---
 @st.cache_data
 def load_data():
-    df = pd.read_csv("C:/Disney_Waiting_Times/disney-waiting-times/all_waiting_times_extracted/all_waiting_times.csv")
-    entities = pd.read_csv("C:/Disney_Waiting_Times/disney-waiting-times/data/overview data/entities_extra.csv")
-    metadata = pd.read_csv("C:/Disney_Waiting_Times/disney-waiting-times/data/overview data/metadata.csv")
+    df = pd.read_csv("../disney-world/data/all_waiting_times.csv")
+    entities = pd.read_csv("../disney-world/data/overview data/entities_extra.csv")
+    metadata = pd.read_csv("../disney-world/data/overview data/metadata.csv")
+
+    # df = pd.read_csv("C:/Disney_Waiting_Times/disney-waiting-times/all_waiting_times_extracted/all_waiting_times.csv")
+    # entities = pd.read_csv("C:/Disney_Waiting_Times/disney-waiting-times/data/overview data/entities_extra.csv")
+    # metadata = pd.read_csv("C:/Disney_Waiting_Times/disney-waiting-times/data/overview data/metadata.csv")
     return df, entities, metadata
 
 df, entities_extra, metadata = load_data()
@@ -106,6 +110,17 @@ elif selected_chart == "Line chart":
     ax.set_title('Average Posted Wait Time by Weekday')
     st.pyplot(fig)
 
+# --- Most Waited Attractions ---
+st.subheader("📊 Attractions with the most Average Wait Time")
+avg_by_attraction = df_rides.groupby('attraction')['SPOSTMIN'].mean().sort_values(ascending=False).head(10)
+fig4, ax4 = plt.subplots(figsize=(8, 5))
+avg_by_attraction.plot(kind='barh', color='lightseagreen', ax=ax4)
+ax4.set_title("Top 10 Most Waited Ride Attractions")
+ax4.set_xlabel("Avg Wait Time (min)")
+ax4.set_ylabel("Attraction")
+ax4.invert_yaxis()
+st.pyplot(fig4)
+
 # --- Attraction-specific chart ---
 st.subheader(f"🎡 Wait Time Trend for {selected_attraction}")
 df_attraction_day_avg = df_attraction.groupby('date')['SPOSTMIN'].mean()
@@ -127,17 +142,6 @@ ax3.set_xlabel("HOLIDAYM")
 ax3.set_ylabel("Avg Wait Time (min)")
 ax3.grid(True)
 st.pyplot(fig3)
-
-# --- Least Waited Attractions ---
-st.subheader("📊 Attractions with the Lowest Average Wait Time")
-avg_by_attraction = df_rides.groupby('attraction')['SPOSTMIN'].mean().sort_values().head(10)
-fig4, ax4 = plt.subplots(figsize=(8, 5))
-avg_by_attraction.plot(kind='barh', color='lightseagreen', ax=ax4)
-ax4.set_title("Top 10 Least Waited Ride Attractions")
-ax4.set_xlabel("Avg Wait Time (min)")
-ax4.set_ylabel("Attraction")
-ax4.invert_yaxis()
-st.pyplot(fig4)
 
 # --- Recommendation System ---
 st.subheader("🔎 Recommended Attractions Based on Low Wait Times")
