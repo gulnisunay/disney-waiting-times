@@ -60,8 +60,9 @@ df_rides = df[
 
 # --- Merge holiday info ---
 metadata['DATE'] = pd.to_datetime(metadata['DATE'], errors='coerce').dt.date
-df_rides = df_rides.merge(metadata[['DATE', 'HOLIDAYM']], left_on='date', right_on='DATE', how='left')
+df_rides = df_rides.merge(metadata[['DATE', 'HOLIDAYM', 'WDWSEASON']], left_on='date', right_on='DATE', how='left')
 df_rides['HOLIDAYM'] = df_rides['HOLIDAYM'].fillna(0)
+df_rides['WDWSEASON'] = df_rides['WDWSEASON'].fillna("No Holiday")
 
 # --- Sidebar Filters ---
 st.sidebar.header("📌 Filters")
@@ -134,20 +135,36 @@ st.pyplot(fig2)
 
 # --- Holiday-Specific Analysis for Selected Attraction ---
 st.subheader(f"📈 Holiday Impact on Wait Times for {selected_attraction}")
-df_attraction_holiday = df_attraction.groupby('HOLIDAYM')['SPOSTMIN'].mean()
+
+# Group by WDWSEASON instead of HOLIDAYM
+df_attraction_holiday = (
+    df_rides[df_rides['attraction'] == selected_attraction]
+    .groupby('WDWSEASON')['SPOSTMIN']
+    .mean()
+    .sort_values(ascending=False)
+)
+
 fig3, ax3 = plt.subplots(figsize=(8, 4))
 df_attraction_holiday.plot(kind='bar', color='coral', ax=ax3)
 ax3.set_title(f"Avg Wait Time by HOLIDAYM for {selected_attraction}")
-ax3.set_xlabel("HOLIDAYM")
+#ax3.set_xlabel("HOLIDAYM")
+ax3.set_xlabel("Holiday Name")
 ax3.set_ylabel("Avg Wait Time (min)")
+ax3.tick_params(axis='x', rotation=45)
 ax3.grid(True)
+
+# ✅ Make x-labels readable
+ax3.tick_params(axis='x', rotation=30)
+for label in ax3.get_xticklabels():
+    label.set_horizontalalignment('right')
+
 st.pyplot(fig3)
 
 # --- Recommendation System ---
 st.subheader("🔎 Recommended Attractions Based on Low Wait Times")
-user_wait_pref = st.slider("Maximum preferred wait time (minutes)", min_value=0, max_value=60, value=30)
+user_wait_pref = st.slider("Maximum preferred wait time (minutes)", min_value=0, max_value=85, value=30)
 avg_waits = df_rides.groupby('attraction')['SPOSTMIN'].mean()
-recommended = avg_waits[avg_waits <= user_wait_pref].sort_values().head(10)
+recommended = avg_waits[avg_waits <= user_wait_pref].sort_values().head(20)
 
 if not recommended.empty:
     st.write("Here are some attractions with low average wait times:")
