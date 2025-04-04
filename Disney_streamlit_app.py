@@ -7,8 +7,6 @@ st.set_page_config(
 
 import pandas as pd
 import matplotlib.pyplot as plt
-import seaborn as sns
-import joblib
 import numpy as np
 import calendar
 from datetime import datetime
@@ -84,18 +82,11 @@ avg_wait = df_filtered['SPOSTMIN'].mean()
 st.metric(label=f"Average Wait Time on {selected_day} (HOLIDAYM={selected_holiday})", value=f"{avg_wait:.2f} min")
 
 # --- Chart Selection ---
-st.subheader(f"📊 {selected_chart} of Average Wait Time by Weekday & HOLIDAYM")
 heatmap_data = df_rides.groupby(['weekday', 'HOLIDAYM'])['SPOSTMIN'].mean().unstack()
 weekday_order = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
 heatmap_data = heatmap_data.reindex(weekday_order)
 
-if selected_chart == "Heatmap":
-    fig, ax = plt.subplots(figsize=(10, 5))
-    sns.heatmap(heatmap_data, cmap="YlOrRd", annot=True, fmt=".1f", linewidths=0.5, ax=ax)
-    plt.title("Avg Posted Wait Time (min)")
-    st.pyplot(fig)
-
-elif selected_chart == "Bar chart":
+if selected_chart == "Bar chart":
     avg_by_day = df_rides.groupby('weekday')['SPOSTMIN'].mean().reindex(weekday_order)
     fig, ax = plt.subplots()
     avg_by_day.plot(kind='bar', ax=ax, color='skyblue')
